@@ -1,0 +1,100 @@
+{
+  "name": "@jupyterlite/webr-kernel",
+  "version": "0.1.0",
+  "description": "An R kernel for JupyterLite, powered by webR",
+  "keywords": [
+    "jupyter",
+    "jupyterlab",
+    "jupyterlite",
+    "jupyterlite-extension"
+  ],
+  "homepage": "https://github.com/r-wasm/jupyterlite-webr-kernel",
+  "bugs": {
+    "url": "https://github.com/r-wasm/jupyterlite-webr-kernel/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "George Stagg",
+    "email": "george.stagg@posit.co"
+  },
+  "files": [
+    "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf,wasm}",
+    "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
+  ],
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "style": "style/index.css",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/r-wasm/jupyterlite-webr-kernel.git"
+  },
+  "scripts": {
+    "build": "yarn run build:lib && yarn run build:labextension:dev",
+    "build:prod": "yarn run clean && yarn run build:lib && yarn run build:labextension",
+    "build:labextension": "jupyter labextension build .",
+    "build:labextension:dev": "jupyter labextension build --development True .",
+    "build:lib": "tsc",
+    "clean": "yarn run clean:lib",
+    "clean:lib": "rimraf lib tsconfig.tsbuildinfo",
+    "clean:labextension": "rimraf jupyterlite_webr/labextension",
+    "clean:all": "yarn run clean:lib && yarn run clean:labextension",
+    "eslint": "eslint . --ext .ts,.tsx --fix",
+    "eslint:check": "eslint . --ext .ts,.tsx",
+    "install:extension": "yarn run build",
+    "lint": "yarn eslint",
+    "lint:check": "yarn eslint:check"
+  },
+  "dependencies": {
+    "@jupyterlite/kernel": "^0.1.0-beta.14",
+    "@jupyterlite/server": "^0.1.0-alpha.14"
+  },
+  "devDependencies": {
+    "@jupyterlab/builder": "^3.1.0",
+    "@typescript-eslint/eslint-plugin": "^4.8.1",
+    "@typescript-eslint/parser": "^4.8.1",
+    "copy-webpack-plugin": "^9.0.1",
+    "copyfiles": "^2.4.1",
+    "eslint": "^7.14.0",
+    "eslint-config-prettier": "^6.15.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "file-loader": "^6.2.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^2.8.0",
+    "rimraf": "^3.0.2",
+    "shx": "^0.3.0",
+    "typescript": "~4.2.3"
+  },
+  "sideEffects": [
+    "style/*.css",
+    "style/index.js"
+  ],
+  "styleModule": "style/index.js",
+  "publishConfig": {
+    "access": "public"
+  },
+  "jupyterlab": {
+    "extension": true,
+    "outputDir": "jupyterlite_webr/labextension",
+    "webpackConfig": "./webpack.config.js",
+    "sharedPackages": {
+      "@jupyterlite/kernel": {
+        "bundled": false,
+        "singleton": true
+      }
+    }
+  },
+  "jupyterlite": {
+    "liteExtension": true
+  },
+  "jupyter-releaser": {
+    "skip": [
+      "check-links"
+    ],
+    "hooks": {
+      "before-build-npm": [
+        "python -m pip install jupyterlab~=3.1",
+        "jlpm"
+      ]
+    }
+  }
+}
