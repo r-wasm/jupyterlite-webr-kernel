@@ -12,13 +12,13 @@ const server_kernel: JupyterLiteServerPlugin<void> = {
     kernelspecs.register({
       spec: {
         name: 'webR',
-        display_name: 'R',
+        display_name: 'R (webR)',
         language: 'R',
         argv: [],
         spec: {
           argv: [],
           env: {},
-          display_name: 'R',
+          display_name: 'R (webR)',
           language: 'R',
           interrupt_mode: 'message',
           metadata: {},
