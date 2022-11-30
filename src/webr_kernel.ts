@@ -3,7 +3,7 @@ import { IKernel } from '@jupyterlite/kernel';
 import { ISignal, Signal } from '@lumino/signaling';
 import { v4 as uuid } from 'uuid';
 import { WebR } from '@georgestagg/webr';
-import { RObjData } from '@georgestagg/webr/dist/webR/robj';
+import { RObjData, RInteger } from '@georgestagg/webr/dist/webR/robj';
 
 export namespace WebRKernel {
   export interface IOptions extends IKernel.IOptions {}
@@ -37,6 +37,7 @@ export class WebRKernel implements IKernel {
       this.#webR.init(),
       this.#webR.installPackages(['svglite']),
       this.#webR.evalRCode('library(svglite)'),
+      this.#webR.evalRCode('options(device=function(...){ pdf(...); dev.control("enable") })'),
     ].reduce((p, x) => p.then(() => x), Promise.resolve());
   }
 
@@ -121,6 +122,33 @@ export class WebRKernel implements IKernel {
             }
           }
         });
+
+        const dev = (await this.#webR.evalRCode('dev.cur()')).result as RInteger;
+        const devNumber = await dev.toNumber();
+        if (devNumber && devNumber > 1) {
+          // A non-null graphics device is currently being used, let's copy it
+          await this.#webR.evalRCode(`
+            try({
+              dev.copy(function(...) {
+                svglite(width = 6.25, height = 5, ...)
+              }, "/tmp/_webRplots.svg")
+              dev.off()
+            }, silent=TRUE)
+          `);
+          const plotData = await this.#webR.getFileData('/tmp/_webRplots.svg');
+          console.log(plotData);
+          this.sendExecuteResult(msg, {
+            execution_count: this.#executionCounter,
+            data: {
+              'image/svg+xml': new TextDecoder().decode(plotData),
+            },
+            metadata: {
+              'image/svg+xml': {
+                isolated: true,
+              },
+            },
+          });
+        }
         if (status === 'ok') {
           this.sendExecuteReply(msg, {
             status: status,
