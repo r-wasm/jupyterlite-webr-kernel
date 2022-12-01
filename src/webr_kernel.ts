@@ -24,6 +24,7 @@ export class WebRKernel implements IKernel {
   #executionCounter = 0;
   #webR: WebR;
   #init: Promise<any>;
+  #envSetup: Promise<any>;
 
   constructor(options: WebRKernel.IOptions) {
     const { id, name, sendMessage, location } = options;
@@ -33,12 +34,8 @@ export class WebRKernel implements IKernel {
     this.#sendMessage = sendMessage;
     this.#webR = new WebR();
     this.sendKernelStatus('starting');
-    this.#init = [
-      this.#webR.init(),
-      this.#webR.installPackages(['svglite']),
-      this.#webR.evalRCode('library(svglite)'),
-      this.#webR.evalRCode('options(device=function(...){ pdf(...); dev.control("enable") })'),
-    ].reduce((p, x) => p.then(() => x), Promise.resolve());
+    this.#init = this.#webR.init();
+    this.#envSetup = this.setupEnvironment();
   }
 
   get id(): string {
@@ -73,6 +70,19 @@ export class WebRKernel implements IKernel {
     this.#disposed.emit(void 0);
   }
 
+  async setupEnvironment(): Promise<void> {
+    await this.ready;
+    await this.#webR.installPackages(['svglite']);
+    await this.#webR.evalRCode(`
+      library(svglite)
+      options(device = function(...){
+        pdf(...)
+        dev.control("enable")
+      })
+    `);
+    this.sendKernelStatus('idle');
+  }
+
   async handleMessage(msg: KernelMessage.IMessage): Promise<void> {
     this.#parentHeader = msg.header;
     switch (msg.header.msg_type) {
@@ -83,6 +93,7 @@ export class WebRKernel implements IKernel {
           this.#executionCounter = this.#executionCounter + 1;
         }
         let status: 'ok' | 'error' = 'ok';
+        await this.#envSetup;
         const exec = await this.#webR.evalRCode(req.content.code, undefined, {
           withAutoprint: true,
           captureStreams: true,
@@ -162,7 +173,7 @@ export class WebRKernel implements IKernel {
       }
       case 'kernel_info_request': {
         this.sendKernelInfoReply(msg);
-        this.ready.then(() => this.sendKernelStatus('idle'));
+        this.ready.then(() => this.sendKernelStatus('busy'));
         break;
       }
       default:
