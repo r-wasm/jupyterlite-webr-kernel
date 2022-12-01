@@ -45,9 +45,10 @@
     "lint:check": "yarn eslint:check"
   },
   "dependencies": {
-    "@georgestagg/webr": "0.1.0-alpha.6",
+    "@georgestagg/webr": "file:../webR/src/georgestagg-webr-0.1.0-alpha.7.tgz",
     "@jupyterlite/kernel": "^0.1.0-beta.14",
-    "@jupyterlite/server": "^0.1.0-alpha.14"
+    "@jupyterlite/server": "^0.1.0-alpha.14",
+    "hash.js": "^1.1.7"
   },
   "devDependencies": {
     "@jupyterlab/builder": "^3.1.0",

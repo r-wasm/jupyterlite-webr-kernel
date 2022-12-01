@@ -4,6 +4,7 @@ import { ISignal, Signal } from '@lumino/signaling';
 import { v4 as uuid } from 'uuid';
 import { WebR } from '@georgestagg/webr';
 import { RObjData, RInteger } from '@georgestagg/webr/dist/webR/robj';
+import { sha256 } from 'hash.js';
 
 export namespace WebRKernel {
   export interface IOptions extends IKernel.IOptions {}
@@ -25,6 +26,7 @@ export class WebRKernel implements IKernel {
   #webR: WebR;
   #init: Promise<any>;
   #envSetup: Promise<any>;
+  #lastPlotHash: string | undefined = undefined;
 
   constructor(options: WebRKernel.IOptions) {
     const { id, name, sendMessage, location } = options;
@@ -137,7 +139,6 @@ export class WebRKernel implements IKernel {
         const dev = (await this.#webR.evalRCode('dev.cur()')).result as RInteger;
         const devNumber = await dev.toNumber();
         if (devNumber && devNumber > 1) {
-          // A non-null graphics device is currently being used, let's copy it
           await this.#webR.evalRCode(`
             try({
               dev.copy(function(...) {
@@ -147,19 +148,23 @@ export class WebRKernel implements IKernel {
             }, silent=TRUE)
           `);
           const plotData = await this.#webR.getFileData('/tmp/_webRplots.svg');
-          console.log(plotData);
-          this.sendExecuteResult(msg, {
-            execution_count: this.#executionCounter,
-            data: {
-              'image/svg+xml': new TextDecoder().decode(plotData),
-            },
-            metadata: {
-              'image/svg+xml': {
-                isolated: true,
+          const plotHash = sha256().update(plotData).digest('hex');
+          if (!this.#lastPlotHash || plotHash !== this.#lastPlotHash) {
+            this.#lastPlotHash = plotHash;
+            this.sendExecuteResult(msg, {
+              execution_count: this.#executionCounter,
+              data: {
+                'image/svg+xml': new TextDecoder().decode(plotData),
               },
-            },
-          });
+              metadata: {
+                'image/svg+xml': {
+                  isolated: true,
+                },
+              },
+            });
+          }
         }
+
         if (status === 'ok') {
           this.sendExecuteReply(msg, {
             status: status,
