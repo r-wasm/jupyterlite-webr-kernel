@@ -2,9 +2,10 @@ import { KernelMessage } from '@jupyterlab/services';
 import { IKernel } from '@jupyterlite/kernel';
 import { ISignal, Signal } from '@lumino/signaling';
 import { v4 as uuid } from 'uuid';
-import { WebR } from '@georgestagg/webr';
-import { RObjData, RInteger } from '@georgestagg/webr/dist/webR/robj';
 import { sha256 } from 'hash.js';
+
+import { WebR } from '@georgestagg/webr';
+import { RCharacter, RLogical, RList, RInteger } from '@georgestagg/webr/robj';
 
 export namespace WebRKernel {
   export interface IOptions extends IKernel.IOptions {}
@@ -75,12 +76,19 @@ export class WebRKernel implements IKernel {
   async setupEnvironment(): Promise<void> {
     await this.ready;
     await this.#webR.installPackages(['svglite']);
-    await this.#webR.evalRCode(`
-      library(svglite)
+    await this.#webR.evalR('library(svglite)');
+    // Enable dev.control to allow active plots to be copied
+    await this.#webR.evalR(`
       options(device = function(...){
         pdf(...)
         dev.control("enable")
-      })
+      }, webr_new_plot = F)
+    `);
+    // Create a signal when there is a new plot to be shown in JupyterLite
+    await this.#webR.evalR(`
+      setHook("before.plot.new", function() {
+        options(webr_new_plot = T)
+      }, "replace")
     `);
     this.sendKernelStatus('idle');
   }
@@ -89,96 +97,13 @@ export class WebRKernel implements IKernel {
     this.#parentHeader = msg.header;
     switch (msg.header.msg_type) {
       case 'execute_request': {
-        const req = msg as KernelMessage.IExecuteRequestMsg;
-        this.sendKernelStatus('busy');
-        if (req.content.store_history) {
-          this.#executionCounter = this.#executionCounter + 1;
-        }
-        let status: 'ok' | 'error' = 'ok';
-        await this.#envSetup;
-        const exec = await this.#webR.evalRCode(req.content.code, undefined, {
-          withAutoprint: true,
-          captureStreams: true,
-        });
-        const output = exec.output as { type: string; data: unknown }[];
-        output.forEach((out) => {
-          switch (out.type) {
-            case 'stdout':
-              this.sendStreamReply(msg, 'stdout', (out.data as string) + '\n');
-              break;
-            case 'stderr':
-              this.sendStreamReply(msg, 'stderr', (out.data as string) + '\n');
-              break;
-            case 'message': {
-              const data = out.data as { names: string[]; values: [string, RObjData] };
-              this.sendStreamReply(msg, 'stderr', data.values[0] + '\n');
-              break;
-            }
-            case 'warning': {
-              const data = out.data as { names: string[]; values: [string, RObjData] };
-              this.sendStreamReply(msg, 'stderr', 'Warning message:\n' + data.values[0] + '\n');
-              break;
-            }
-            case 'error': {
-              status = 'error';
-              const data = out.data as { names: string[]; values: [string, RObjData] };
-              this.sendStreamReply(msg, 'stderr', 'Error: ' + data.values[0] + '\n');
-              // TODO: intepret the call stack to report a traceback
-              this.sendExecuteReply(msg, {
-                status: status,
-                execution_count: this.#executionCounter,
-                ename: 'error',
-                evalue: data.values[0],
-                traceback: [],
-              });
-              break;
-            }
-          }
-        });
-
-        const dev = (await this.#webR.evalRCode('dev.cur()')).result as RInteger;
-        const devNumber = await dev.toNumber();
-        if (devNumber && devNumber > 1) {
-          await this.#webR.evalRCode(`
-            try({
-              dev.copy(function(...) {
-                svglite(width = 6.25, height = 5, ...)
-              }, "/tmp/_webRplots.svg")
-              dev.off()
-            }, silent=TRUE)
-          `);
-          const plotData = await this.#webR.getFileData('/tmp/_webRplots.svg');
-          const plotHash = sha256().update(plotData).digest('hex');
-          if (!this.#lastPlotHash || plotHash !== this.#lastPlotHash) {
-            this.#lastPlotHash = plotHash;
-            this.sendExecuteResult(msg, {
-              execution_count: this.#executionCounter,
-              data: {
-                'image/svg+xml': new TextDecoder().decode(plotData),
-              },
-              metadata: {
-                'image/svg+xml': {
-                  isolated: true,
-                },
-              },
-            });
-          }
-        }
-
-        if (status === 'ok') {
-          this.sendExecuteReply(msg, {
-            status: status,
-            execution_count: this.#executionCounter,
-            user_expressions: {},
-          });
-        }
-
-        this.sendKernelStatus('idle');
+        await this.handleExecRequest(msg);
         break;
       }
       case 'kernel_info_request': {
         this.sendKernelInfoReply(msg);
-        this.ready.then(() => this.sendKernelStatus('busy'));
+        await this.ready;
+        this.sendKernelStatus('busy');
         break;
       }
       default:
@@ -186,17 +111,117 @@ export class WebRKernel implements IKernel {
     }
   }
 
-  sendExecuteResult(
+  async handleExecRequest(msg: KernelMessage.IMessage): Promise<void> {
+    const req = msg as KernelMessage.IExecuteRequestMsg;
+    this.sendKernelStatus('busy');
+    if (req.content.store_history) {
+      this.#executionCounter = this.#executionCounter + 1;
+    }
+    await this.#envSetup;
+
+    try {
+      const exec = await this.#webR.captureR(req.content.code, undefined, { withAutoprint: true });
+      const output = exec.output as { type: string; data: unknown }[];
+      // Deal with showing stream and condition outputs
+      output.forEach(async (out) => {
+        switch (out.type) {
+          case 'stdout':
+            this.sendIOReply(msg, 'stream', { name: 'stdout', text: (out.data as string) + '\n' });
+            break;
+          case 'stderr':
+            this.sendIOReply(msg, 'stream', { name: 'stderr', text: (out.data as string) + '\n' });
+            break;
+          case 'message': {
+            const cnd = out.data as RList;
+            const message = (await cnd.get('message')) as RCharacter;
+            this.sendIOReply(msg, 'stream', {
+              name: 'stderr',
+              text: (await message.toString()) + '\n',
+            });
+            break;
+          }
+          case 'warning': {
+            const cnd = out.data as RList;
+            const message = (await cnd.get('message')) as RCharacter;
+            this.sendIOReply(msg, 'stream', {
+              name: 'stderr',
+              text: 'Warning message:\n' + (await message.toString()) + '\n',
+            });
+            break;
+          }
+        }
+      });
+
+      // Send an R plot if there are changes to the graphics device
+      await this.sendPlotOutput(msg);
+      // Send success signal
+      this.sendShellReply(msg, 'execute_reply', {
+        status: 'ok',
+        execution_count: this.#executionCounter,
+        user_expressions: {},
+      });
+    } catch (e) {
+      const evalue = (e as { message: string }).message;
+      this.sendIOReply(msg, 'stream', { name: 'stderr', text: 'Error: ' + evalue + '\n' });
+      this.sendShellReply(msg, 'execute_reply', {
+        status: 'error',
+        execution_count: this.#executionCounter,
+        ename: 'error',
+        evalue: evalue,
+        traceback: [],
+      });
+    }
+    this.sendKernelStatus('idle');
+  }
+
+  async sendPlotOutput(msg: KernelMessage.IMessage): Promise<void> {
+    const dev = (await this.#webR.evalR('dev.cur()')) as RInteger;
+    const newPlot = (await this.#webR.evalR('options("webr_new_plot")[[1]]')) as RLogical;
+    const devNumber = await dev.toNumber();
+    const newPlotLogical = await newPlot.toLogical();
+    if (devNumber && devNumber > 1) {
+      await this.#webR.evalR(`
+        try({
+          dev.copy(function(...) {
+            svglite(width = 6.25, height = 5, ...)
+          }, "/tmp/_webRplots.svg")
+          dev.off()
+        }, silent=TRUE)
+      `);
+      const plotData = await this.#webR.getFileData('/tmp/_webRplots.svg');
+
+      // Send plot data to client if a new.plot() has been triggered or if
+      // the plot has changed since last time
+      const plotHash = sha256().update(plotData).digest('hex');
+      if (newPlotLogical || !this.#lastPlotHash || plotHash !== this.#lastPlotHash) {
+        this.#lastPlotHash = plotHash;
+        this.sendIOReply(msg, 'display_data', {
+          data: {
+            'image/svg+xml': new TextDecoder().decode(plotData),
+          },
+          metadata: {
+            'image/svg+xml': {
+              isolated: true,
+            },
+          },
+        });
+        await this.#webR.evalR('options(webr_new_plot = FALSE)');
+      }
+    }
+  }
+
+  sendIOReply(
     msg: KernelMessage.IMessage,
-    content: KernelMessage.IExecuteResultMsg['content']
+    type: KernelMessage.IOPubMessageType,
+    content: KernelMessage.IIOPubMessage['content']
   ): void {
-    const reply: KernelMessage.IExecuteResultMsg = {
+    const reply: KernelMessage.IIOPubMessage = {
       header: {
         msg_id: uuid(),
         username: msg.header.username,
         session: msg.header.session,
         date: new Date().toISOString(),
-        msg_type: 'execute_result',
+        msg_type: type,
         version: protolcolVersion,
       },
       parent_header: msg.header,
@@ -208,20 +233,21 @@ export class WebRKernel implements IKernel {
     this.#sendMessage(reply);
   }
 
-  sendExecuteReply(
+  sendShellReply(
     msg: KernelMessage.IMessage,
-    content: KernelMessage.IExecuteReplyMsg['content']
+    type: KernelMessage.ShellMessageType,
+    content: KernelMessage.IShellMessage['content']
   ): void {
-    const reply: KernelMessage.IExecuteReplyMsg = {
+    const reply: KernelMessage.IShellMessage = {
       header: {
         msg_id: uuid(),
         username: msg.header.username,
         session: msg.header.session,
         date: new Date().toISOString(),
-        msg_type: 'execute_reply',
+        msg_type: type,
         version: protolcolVersion,
       },
-      parent_header: msg.header as KernelMessage.IHeader<'execute_request'>,
+      parent_header: msg.header as KernelMessage.IHeader<KernelMessage.MessageType>,
       metadata: {},
       content,
       buffers: [],
@@ -250,7 +276,7 @@ export class WebRKernel implements IKernel {
         language_info: {
           name: 'R',
           version: baseRVersion,
-          mimetype: 'text/plain',
+          mimetype: 'text/x-rsrc',
           file_extension: '.R',
         },
         banner: `webR v${webRVersion} - R v${baseRVersion}`,
@@ -280,23 +306,5 @@ export class WebRKernel implements IKernel {
       parent_header: {},
     };
     this.#sendMessage(msg);
-  }
-
-  sendStreamReply(msg: KernelMessage.IMessage, name: 'stdout' | 'stderr', text: string): void {
-    const reply: KernelMessage.IIOPubMessage = {
-      channel: 'iopub',
-      header: {
-        msg_id: uuid(),
-        username: msg.header.username,
-        session: msg.header.session,
-        date: new Date().toISOString(),
-        msg_type: 'stream',
-        version: protolcolVersion,
-      },
-      content: { name: name, text },
-      metadata: {},
-      parent_header: msg.header,
-    };
-    this.#sendMessage(reply);
   }
 }
