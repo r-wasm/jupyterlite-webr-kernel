@@ -4,7 +4,7 @@ import { ISignal, Signal } from '@lumino/signaling';
 import { v4 as uuid } from 'uuid';
 import { sha256 } from 'hash.js';
 
-import { WebR } from '@georgestagg/webr';
+import { Console } from '@georgestagg/webr';
 import { RCharacter, RLogical, RList, RInteger } from '@georgestagg/webr/robj';
 
 export namespace WebRKernel {
@@ -24,7 +24,7 @@ export class WebRKernel implements IKernel {
   #sendMessage: IKernel.SendMessage;
   #parentHeader: KernelMessage.IHeader<KernelMessage.MessageType> | undefined = undefined;
   #executionCounter = 0;
-  #webR: WebR;
+  #webRConsole: Console;
   #init: Promise<any>;
   #envSetup: Promise<any>;
   #lastPlotHash: string | undefined = undefined;
@@ -35,9 +35,14 @@ export class WebRKernel implements IKernel {
     this.#name = name;
     this.#location = location;
     this.#sendMessage = sendMessage;
-    this.#webR = new WebR();
+    this.#webRConsole = new Console({
+      stdout: (line: string) => console.log(line),
+      stderr: (line: string) => console.error(line),
+      prompt: (prompt: string) => this.sendStdinRequest({ prompt, password: false }),
+    });
     this.sendKernelStatus('starting');
-    this.#init = this.#webR.init();
+    this.#webRConsole.run();
+    this.#init = this.#webRConsole.webR.init();
     this.#envSetup = this.setupEnvironment();
   }
 
@@ -75,35 +80,42 @@ export class WebRKernel implements IKernel {
 
   async setupEnvironment(): Promise<void> {
     await this.ready;
-    await this.#webR.installPackages(['svglite']);
-    await this.#webR.evalR('library(svglite)');
+    await this.#webRConsole.webR.installPackages(['svglite']);
+    await this.#webRConsole.webR.evalR('library(svglite)');
     // Enable dev.control to allow active plots to be copied
-    await this.#webR.evalR(`
+    await this.#webRConsole.webR.evalR(`
       options(device = function(...){
         pdf(...)
         dev.control("enable")
       }, webr_new_plot = F)
     `);
     // Create a signal when there is a new plot to be shown in JupyterLite
-    await this.#webR.evalR(`
+    await this.#webRConsole.webR.evalR(`
       setHook("before.plot.new", function() {
         options(webr_new_plot = T)
       }, "replace")
     `);
-    this.sendKernelStatus('idle');
   }
 
   async handleMessage(msg: KernelMessage.IMessage): Promise<void> {
-    this.#parentHeader = msg.header;
     switch (msg.header.msg_type) {
       case 'execute_request': {
+        this.#parentHeader = msg.header;
         await this.handleExecRequest(msg);
         break;
       }
+      case 'input_reply': {
+        const stdin = msg.content as KernelMessage.IInputReplyMsg['content'];
+        if (stdin.status === 'ok') {
+          this.#webRConsole.stdin(stdin.value);
+        }
+        break;
+      }
       case 'kernel_info_request': {
+        this.#parentHeader = msg.header;
         this.sendKernelInfoReply(msg);
         await this.ready;
-        this.sendKernelStatus('busy');
+        this.sendKernelStatus('idle');
         break;
       }
       default:
@@ -120,7 +132,9 @@ export class WebRKernel implements IKernel {
     await this.#envSetup;
 
     try {
-      const exec = await this.#webR.captureR(req.content.code, undefined, { withAutoprint: true });
+      const exec = await this.#webRConsole.webR.captureR(req.content.code, undefined, {
+        withAutoprint: true,
+      });
       const output = exec.output as { type: string; data: unknown }[];
       // Deal with showing stream and condition outputs
       output.forEach(async (out) => {
@@ -175,12 +189,14 @@ export class WebRKernel implements IKernel {
   }
 
   async sendPlotOutput(msg: KernelMessage.IMessage): Promise<void> {
-    const dev = (await this.#webR.evalR('dev.cur()')) as RInteger;
-    const newPlot = (await this.#webR.evalR('options("webr_new_plot")[[1]]')) as RLogical;
+    const dev = (await this.#webRConsole.webR.evalR('dev.cur()')) as RInteger;
+    const newPlot = (await this.#webRConsole.webR.evalR(
+      'options("webr_new_plot")[[1]]'
+    )) as RLogical;
     const devNumber = await dev.toNumber();
     const newPlotLogical = await newPlot.toLogical();
     if (devNumber && devNumber > 1) {
-      await this.#webR.evalR(`
+      await this.#webRConsole.webR.evalR(`
         try({
           dev.copy(function(...) {
             svglite(width = 6.25, height = 5, ...)
@@ -188,7 +204,7 @@ export class WebRKernel implements IKernel {
           dev.off()
         }, silent=TRUE)
       `);
-      const plotData = await this.#webR.getFileData('/tmp/_webRplots.svg');
+      const plotData = await this.#webRConsole.webR.getFileData('/tmp/_webRplots.svg');
 
       // Send plot data to client if a new.plot() has been triggered or if
       // the plot has changed since last time
@@ -205,9 +221,28 @@ export class WebRKernel implements IKernel {
             },
           },
         });
-        await this.#webR.evalR('options(webr_new_plot = FALSE)');
+        await this.#webRConsole.webR.evalR('options(webr_new_plot = FALSE)');
       }
     }
+  }
+
+  sendStdinRequest(content: KernelMessage.IInputRequestMsg['content']): void {
+    const reply: KernelMessage.IInputRequestMsg = {
+      header: {
+        msg_id: uuid(),
+        username: this.#parentHeader ? this.#parentHeader.username : '',
+        session: this.#parentHeader ? this.#parentHeader.session : '',
+        date: new Date().toISOString(),
+        msg_type: 'input_request',
+        version: protolcolVersion,
+      },
+      parent_header: this.#parentHeader as KernelMessage.IHeader,
+      metadata: {},
+      content,
+      buffers: [],
+      channel: 'stdin',
+    };
+    this.#sendMessage(reply);
   }
 
   sendIOReply(
@@ -247,7 +282,7 @@ export class WebRKernel implements IKernel {
         msg_type: type,
         version: protolcolVersion,
       },
-      parent_header: msg.header as KernelMessage.IHeader<KernelMessage.MessageType>,
+      parent_header: msg.header as KernelMessage.IHeader,
       metadata: {},
       content,
       buffers: [],
