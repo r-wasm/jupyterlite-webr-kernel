@@ -4,8 +4,8 @@ import { ISignal, Signal } from '@lumino/signaling';
 import { v4 as uuid } from 'uuid';
 import { sha256 } from 'hash.js';
 
-import { Console } from '@georgestagg/webr';
-import { RCharacter, RLogical, RList, RInteger } from '@georgestagg/webr/robj';
+import { Console } from '@r-wasm/webr';
+import { RCharacter, RLogical, RList, RInteger } from '@r-wasm/webr/robj';
 
 export namespace WebRKernel {
   export interface IOptions extends IKernel.IOptions {}
