@@ -1,8 +1,8 @@
 import { JupyterLiteServer, JupyterLiteServerPlugin } from '@jupyterlite/server';
 import { IKernel, IKernelSpecs } from '@jupyterlite/kernel';
 import { WebRKernel } from './webr_kernel';
-import logo32 from '!!file-loader?context=.!../style/logos/webr-logo-32x32.png';
-import logo64 from '!!file-loader?context=.!../style/logos/webr-logo-64x64.png';
+import logo32 from '!!file-loader?context=.!../style/logos/r-logo-32x32.png';
+import logo64 from '!!file-loader?context=.!../style/logos/r-logo-64x64.png';
 
 const server_kernel: JupyterLiteServerPlugin<void> = {
   id: '@jupyterlite/webr-kernel-extension:kernel',
