@@ -4,6 +4,22 @@ This repository contains a JupyterLite kernel for webR. When the kernel is
 started, the webR WebAssembly binaries are downloaded from CDN and loaded into
 the page.
 
+## Limitations
+
+### Virtual File System Storage
+
+Due to limitations in the way the webR worker thread is implemented, the
+persistent JupyterLite file storage and the Emscripten VFS used by webR are not
+accessible to one another. At the time of writing the easiest way to import
+data into a webR notebook is probably using functions such as `read.csv()` with
+a URL.
+
+### Interruption
+
+Whilst webR supports interrupting long running computations, at the time of
+writing interrupting cell execution with JupyterLite is not yet implemented. An
+infinite looping cell can only be recovered by restarting the kernel.
+
 ## WebR for JupyterLite Development Setup
 
 The following is an example set of instructions for Unix-like environments such
