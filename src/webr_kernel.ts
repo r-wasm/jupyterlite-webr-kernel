@@ -5,7 +5,7 @@ import { v4 as uuid } from 'uuid';
 import { sha256 } from 'hash.js';
 
 import { Console } from '@r-wasm/webr';
-import { RCharacter, RLogical, RList, RInteger } from '@r-wasm/webr/robj';
+import { RCharacter, RLogical, RList, RInteger } from '@r-wasm/webr/robj-main';
 
 export namespace WebRKernel {
   export interface IOptions extends IKernel.IOptions {}
@@ -194,7 +194,7 @@ export class WebRKernel implements IKernel {
       'options("webr_new_plot")[[1]]'
     )) as RLogical;
     const devNumber = await dev.toNumber();
-    const newPlotLogical = await newPlot.toLogical();
+    const newPlotLogical = await newPlot.toBoolean();
     if (devNumber && devNumber > 1) {
       await this.#webRConsole.webR.evalR(`
         try({
@@ -204,7 +204,7 @@ export class WebRKernel implements IKernel {
           dev.off()
         }, silent=TRUE)
       `);
-      const plotData = await this.#webRConsole.webR.getFileData('/tmp/_webRplots.svg');
+      const plotData = await this.#webRConsole.webR.FS.readFile('/tmp/_webRplots.svg');
 
       // Send plot data to client if a new.plot() has been triggered or if
       // the plot has changed since last time
