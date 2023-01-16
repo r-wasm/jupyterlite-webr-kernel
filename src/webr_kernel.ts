@@ -87,13 +87,17 @@ export class WebRKernel implements IKernel {
       options(device = function(...){
         pdf(...)
         dev.control("enable")
-      }, webr_new_plot = F)
+      }, webr.fig.new = FALSE)
     `);
     // Create a signal when there is a new plot to be shown in JupyterLite
     await this.#webRConsole.webR.evalR(`
       setHook("before.plot.new", function() {
-        options(webr_new_plot = T)
+        options(webr.fig.new = TRUE)
       }, "replace")
+    `);
+    // Default plot size
+    await this.#webRConsole.webR.evalR(`
+      options(webr.fig.width = 6, webr.fig.height = 4.5)
     `);
   }
 
@@ -191,7 +195,7 @@ export class WebRKernel implements IKernel {
   async sendPlotOutput(msg: KernelMessage.IMessage): Promise<void> {
     const dev = (await this.#webRConsole.webR.evalR('dev.cur()')) as RInteger;
     const newPlot = (await this.#webRConsole.webR.evalR(
-      'options("webr_new_plot")[[1]]'
+      'options("webr.fig.new")[[1]]'
     )) as RLogical;
     const devNumber = await dev.toNumber();
     const newPlotLogical = await newPlot.toBoolean();
@@ -199,7 +203,9 @@ export class WebRKernel implements IKernel {
       await this.#webRConsole.webR.evalR(`
         try({
           dev.copy(function(...) {
-            svglite(width = 6.25, height = 5, ...)
+            w <- options("webr.fig.width")[[1]]
+            h <- options("webr.fig.height")[[1]]
+            svglite(width = w, height = h, ...)
           }, "/tmp/_webRplots.svg")
           dev.off()
         }, silent=TRUE)
@@ -221,7 +227,7 @@ export class WebRKernel implements IKernel {
             },
           },
         });
-        await this.#webRConsole.webR.evalR('options(webr_new_plot = FALSE)');
+        await this.#webRConsole.webR.evalR('options(webr.fig.new = FALSE)');
       }
     }
   }
