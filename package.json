@@ -13,10 +13,16 @@
     "url": "https://github.com/r-wasm/jupyterlite-webr-kernel/issues"
   },
   "license": "MIT",
-  "author": {
-    "name": "George Stagg",
-    "email": "george.stagg@posit.co"
-  },
+  "contributors": [
+    {
+      "name": "George Stagg",
+      "email": "george.stagg@posit.co"
+    },
+    {
+      "name": "Posit Software, PBC",
+      "url": "https://posit.co/"
+    }
+  ],
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf,wasm}",
     "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
