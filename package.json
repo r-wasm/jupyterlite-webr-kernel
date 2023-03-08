@@ -1,12 +1,14 @@
 {
-  "name": "@jupyterlite/webr-kernel",
+  "name": "@r-wasm/jupyterlite-webr-kernel",
   "version": "0.1.0",
   "description": "An R kernel for JupyterLite, powered by webR",
   "keywords": [
     "jupyter",
     "jupyterlab",
     "jupyterlite",
-    "jupyterlite-extension"
+    "jupyterlite-extension",
+    "wasm",
+    "webr"
   ],
   "homepage": "https://github.com/r-wasm/jupyterlite-webr-kernel",
   "bugs": {
