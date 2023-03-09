@@ -15,6 +15,10 @@
     "url": "https://github.com/r-wasm/jupyterlite-webr-kernel/issues"
   },
   "license": "MIT",
+  "author": {
+    "name": "George Stagg",
+    "email": "george.stagg@posit.co"
+  },
   "contributors": [
     {
       "name": "George Stagg",
