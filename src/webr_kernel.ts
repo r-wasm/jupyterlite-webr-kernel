@@ -4,8 +4,8 @@ import { ISignal, Signal } from '@lumino/signaling';
 import { v4 as uuid } from 'uuid';
 import { sha256 } from 'hash.js';
 
-import { Console } from '@r-wasm/webr';
-import { RCharacter, RLogical, RList, RInteger } from '@r-wasm/webr/robj-main';
+import { Console, Shelter } from '@r-wasm/webr';
+import { RCharacter, RList } from '@r-wasm/webr/robj-main';
 
 export namespace WebRKernel {
   export interface IOptions extends IKernel.IOptions {}
@@ -27,6 +27,7 @@ export class WebRKernel implements IKernel {
   #webRConsole: Console;
   #init: Promise<any>;
   #envSetup: Promise<any>;
+  #shelter!: Shelter;
   #lastPlotHash: string | undefined = undefined;
 
   constructor(options: WebRKernel.IOptions) {
@@ -80,23 +81,24 @@ export class WebRKernel implements IKernel {
 
   async setupEnvironment(): Promise<void> {
     await this.ready;
+    this.#shelter = await new this.#webRConsole.webR.Shelter();
     await this.#webRConsole.webR.installPackages(['svglite']);
-    await this.#webRConsole.webR.evalR('library(svglite)');
+    await this.#webRConsole.webR.evalRVoid('library(svglite)');
     // Enable dev.control to allow active plots to be copied
-    await this.#webRConsole.webR.evalR(`
+    await this.#webRConsole.webR.evalRVoid(`
       options(device = function(...){
         pdf(...)
         dev.control("enable")
       }, webr.plot.new = FALSE)
     `);
     // Create a signal when there is a new plot to be shown in JupyterLite
-    await this.#webRConsole.webR.evalR(`
+    await this.#webRConsole.webR.evalRVoid(`
       setHook("grid.newpage", function() {
         options(webr.plot.new = TRUE)
       }, "replace")
     `);
     // Default plot size
-    await this.#webRConsole.webR.evalR(`
+    await this.#webRConsole.webR.evalRVoid(`
       options(webr.plot.width = 7, webr.plot.height = 5.25)
     `);
   }
@@ -136,9 +138,7 @@ export class WebRKernel implements IKernel {
     await this.#envSetup;
 
     try {
-      const exec = await this.#webRConsole.webR.captureR(req.content.code, undefined, {
-        withAutoprint: true,
-      });
+      const exec = await this.#shelter.captureR(req.content.code, { withAutoprint: true });
       const output = exec.output as { type: string; data: unknown }[];
       // Deal with showing stream and condition outputs
       output.forEach(async (out) => {
@@ -188,19 +188,17 @@ export class WebRKernel implements IKernel {
         evalue: evalue,
         traceback: [],
       });
+    } finally {
+      await this.#shelter.purge();
     }
     this.sendKernelStatus('idle');
   }
 
   async sendPlotOutput(msg: KernelMessage.IMessage): Promise<void> {
-    const dev = (await this.#webRConsole.webR.evalR('dev.cur()')) as RInteger;
-    const newPlot = (await this.#webRConsole.webR.evalR(
-      'options("webr.plot.new")[[1]]'
-    )) as RLogical;
-    const devNumber = await dev.toNumber();
-    const newPlotLogical = await newPlot.toBoolean();
-    if (devNumber && devNumber > 1) {
-      await this.#webRConsole.webR.evalR(`
+    const dev = await this.#webRConsole.webR.evalRNumber('dev.cur()');
+    const newPlot = await this.#webRConsole.webR.evalRBoolean('options("webr.plot.new")[[1]]');
+    if (dev > 1) {
+      await this.#webRConsole.webR.evalRVoid(`
         try({
           dev.copy(function(...) {
             w <- options("webr.plot.width")[[1]]
@@ -215,7 +213,7 @@ export class WebRKernel implements IKernel {
       // Send plot data to client if a new.plot() has been triggered or if
       // the plot has changed since last time
       const plotHash = sha256().update(plotData).digest('hex');
-      if (newPlotLogical || !this.#lastPlotHash || plotHash !== this.#lastPlotHash) {
+      if (newPlot || !this.#lastPlotHash || plotHash !== this.#lastPlotHash) {
         this.#lastPlotHash = plotHash;
         this.sendIOReply(msg, 'display_data', {
           data: {
@@ -227,7 +225,7 @@ export class WebRKernel implements IKernel {
             },
           },
         });
-        await this.#webRConsole.webR.evalR('options(webr.plot.new = FALSE)');
+        await this.#webRConsole.webR.evalRVoid('options(webr.plot.new = FALSE)');
       }
     }
   }
