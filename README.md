@@ -25,7 +25,7 @@ First, setup a fresh version of JupyterLite in a new virtual environment:
   terminal.
 * Create a new virtual env, `python -m venv jupyterlite-venv`
 * Activate it, `. ./jupyterlite-venv/bin/activate`
-* Install JupyterLite, `pip install jupyterlab jupyterlite jupyter_packaging`
+* Install JupyterLite, `pip install "jupyterlab<4" jupyterlite jupyter_packaging`
 
 In order to use the webR kernel with JupyterLite the page must be served with certain security-related HTTP headers, so that it is is cross-origin isolated. By setting these headers webR's `SharedArrayBuffer` based communication channel can be used.
 
@@ -53,7 +53,7 @@ Next, clone the webR JupyterLite kernel repository, change directory into it, an
 
  * `git clone [...]`
  * `cd jupyterlite-webr-kernel`
- * `npm install`
+ * `yarn install`
  * `yarn build`
  * `python setup.py sdist`
 
