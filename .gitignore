@@ -8,6 +8,7 @@ node_modules/
 *.tsbuildinfo
 jupyterlite_webr/labextension
 .yarn/
+.jupyterlite.doit.db
 
 # Created by https://www.gitignore.io/api/python
 # Edit at https://www.gitignore.io/?templates=python

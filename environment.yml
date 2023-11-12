@@ -1,0 +1,15 @@
+name: jupyterlite-webr-kernel
+channels:
+  - conda-forge
+  - conda-forge/label/jupyterlite_core_alpha
+dependencies:
+  # python
+  - python
+  - build
+  - pip
+  - ruff
+  # javascript
+  - nodejs=20
+  # deps
+  - jupyterlab >=4.0,<5
+  - jupyterlite-core >=0.2.0a1,<0.3.0

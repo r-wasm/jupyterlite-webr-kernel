@@ -1,6 +1,6 @@
 {
   "name": "@r-wasm/jupyterlite-webr-kernel",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "An R kernel for JupyterLite, powered by webR",
   "keywords": [
     "jupyter",
@@ -54,7 +54,10 @@
     "eslint:check": "eslint . --ext .ts,.tsx",
     "install:extension": "yarn run build",
     "lint": "yarn eslint",
-    "lint:check": "yarn eslint:check"
+    "lint:check": "yarn eslint:check",
+    "watch": "run-p watch:src watch:labextension",
+    "watch:src": "tsc -w --sourceMap",
+    "watch:labextension": "jupyter labextension watch ."
   },
   "dependencies": {
     "@jupyterlite/kernel": "^0.2.0",
