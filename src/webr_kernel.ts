@@ -4,16 +4,16 @@ import { ISignal, Signal } from '@lumino/signaling';
 import { v4 as uuid } from 'uuid';
 import { sha256 } from 'hash.js';
 
-import { Console, Shelter } from '@r-wasm/webr';
-import { RCharacter, RList } from '@r-wasm/webr/robj-main';
+import { Console, Shelter } from "webr";
+import { RCharacter, RList } from "webr/robj-main";
 
 export namespace WebRKernel {
   export interface IOptions extends IKernel.IOptions {}
 }
 
-const webRVersion = '0.1.0';
-const baseRVersion = '3.1.4';
-const protolcolVersion = '5.2';
+const webRVersion = "0.2.1";
+const baseRVersion = "4.3.0";
+const protolcolVersion = "5.2";
 
 export class WebRKernel implements IKernel {
   #id: string;

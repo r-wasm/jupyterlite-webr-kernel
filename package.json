@@ -1,6 +1,6 @@
 {
   "name": "@r-wasm/jupyterlite-webr-kernel",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "An R kernel for JupyterLite, powered by webR",
   "keywords": [
     "jupyter",
@@ -57,13 +57,13 @@
     "lint:check": "yarn eslint:check"
   },
   "dependencies": {
-    "@jupyterlite/kernel": "^0.1.0-beta.14",
-    "@jupyterlite/server": "^0.1.0-alpha.14",
-    "@r-wasm/webr": "^0.1.0",
-    "hash.js": "^1.1.7"
+    "@jupyterlite/kernel": "^0.2.0",
+    "@jupyterlite/server": "^0.2.0",
+    "hash.js": "^1.1.7",
+    "webr": "^0.2.1"
   },
   "devDependencies": {
-    "@jupyterlab/builder": "^3.1.0",
+    "@jupyterlab/builder": "^4.0.8",
     "@types/uuid": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^4.8.1",
     "@typescript-eslint/parser": "^4.8.1",
@@ -108,7 +108,7 @@
     ],
     "hooks": {
       "before-build-npm": [
-        "python -m pip install jupyterlab~=3.1",
+        "python -m pip install 'jupyterlab>=4.0.0,<5'",
         "jlpm"
       ]
     }
