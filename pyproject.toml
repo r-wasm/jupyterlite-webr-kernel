@@ -1,0 +1,113 @@
+[build-system]
+requires = ["hatchling>=1.5.0", "jupyterlab>=4.0.0,<5", "hatch-nodejs-version>=0.3.2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jupyterlite-webr"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+  "Framework :: Jupyter",
+  "Framework :: Jupyter :: JupyterLab",
+  "Framework :: Jupyter :: JupyterLab :: 4",
+  "Framework :: Jupyter :: JupyterLab :: Extensions",
+  "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
+dependencies = ["jupyterlite-core>=0.2.0rc0,<0.3"]
+dynamic = ["version", "description", "authors", "urls", "keywords"]
+
+[project.optional-dependencies]
+dev = ["jupyterlab>=4.0.0,<5", "ruff==0.1.5"]
+
+[tool.hatch.version]
+source = "nodejs"
+
+[tool.hatch.metadata.hooks.nodejs]
+fields = ["description", "authors", "urls"]
+
+[tool.hatch.build.targets.sdist]
+artifacts = ["jupyterlite_webr/labextension"]
+exclude = [".github"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"jupyterlite_webr/labextension" = "share/jupyter/labextensions/@r-wasm/jupyterlite-webr-kernel"
+"install.json" = "share/jupyter/labextensions/@r-wasm/jupyterlite-webr-kernel/install.json"
+
+[tool.hatch.build.hooks.version]
+path = "jupyterlite_webr/_version.py"
+
+[tool.hatch.build.hooks.jupyter-builder]
+dependencies = ["hatch-jupyter-builder>=0.5"]
+build-function = "hatch_jupyter_builder.npm_builder"
+ensured-targets = [
+    "jupyterlite_webr/labextension/static/style.js",
+    "jupyterlite_webr/labextension/package.json",
+]
+skip-if-exists = [
+    "jupyterlite_webr/labextension/static/style.js",
+    "jupyterlite_webr/labextension/package.json",
+]
+
+[tool.hatch.build.hooks.jupyter-builder.build-kwargs]
+build_cmd = "build:prod"
+npm = ["jlpm"]
+source_dir = "src"
+build_dir = "jupyterlite_webr/labextension"
+
+[tool.hatch.build.hooks.jupyter-builder.editable-build-kwargs]
+build_cmd = "install:extension"
+npm = ["jlpm"]
+source_dir = "src"
+build_dir = "jupyterlite_webr/labextension"
+
+[tool.jupyter-releaser.options]
+version_cmd = "hatch version"
+
+[tool.jupyter-releaser.hooks]
+before-build-npm = [
+    "python -m pip install 'jupyterlab>=4.0.0,<5'",
+    "jlpm",
+    "jlpm build:prod"
+]
+before-build-python = ["jlpm clean:all"]
+
+[tool.check-wheel-contents]
+ignore = ["W002"]
+
+[tool.ruff]
+target-version = "py38"
+exclude = ["*/tests/*", "docs"]
+line-length = 100
+select = [
+  "A", "B", "C", "DTZ", "E", "EM", "F", "FBT", "I", "ICN", "ISC", "N",
+  "PLC", "PLE", "PLR", "PLW", "Q", "RUF", "S", "SIM", "T", "TID", "UP",
+  "W", "YTT",
+]
+ignore = [
+  "D100",
+  "D104",
+  # Q000 Single quotes found but double quotes preferred
+  "Q000",
+  # FBT001 Boolean positional arg in function definition
+  "FBT001", "FBT002", "FBT003",
+  # C408 Unnecessary `dict` call (rewrite as a literal)
+  "C408", "C416",
+  # allow for using print()
+  "T201",
+  # PLR0913 Too many arguments to function call
+  "PLR0913",
+  # extended flake8 ignore
+  "D104", "D100", "EM101",
+  # Probable insecure usage of temporary file or directory
+  "S108",
+  # RUF012 Mutable class attributes should be annotated with `typing.ClassVar`
+  "RUF012",
+]

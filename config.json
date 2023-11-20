@@ -1,0 +1,8 @@
+{
+  "LiteBuildConfig": {
+    "extra_http_headers": {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "require-corp"
+    }
+  }
+}
