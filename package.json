@@ -63,7 +63,7 @@
     "@jupyterlite/kernel": "^0.2.0",
     "@jupyterlite/server": "^0.2.0",
     "hash.js": "^1.1.7",
-    "webr": "^0.2.1"
+    "webr": "^0.2.2"
   },
   "devDependencies": {
     "@jupyterlab/builder": "^4.0.8",

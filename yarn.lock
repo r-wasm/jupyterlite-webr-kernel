@@ -882,7 +882,7 @@ __metadata:
     shx: ^0.3.0
     typescript: ^4.9.5
     uuid: ^9.0.0
-    webr: ^0.2.1
+    webr: ^0.2.2
   languageName: unknown
   linkType: soft
 
@@ -1645,7 +1645,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"classnames@npm:*":
+"classnames@npm:^2.2.6":
   version: 2.3.2
   resolution: "classnames@npm:2.3.2"
   checksum: 2c62199789618d95545c872787137262e741f9db13328e216b093eea91c85ef2bfb152c1f9e63027204e2559a006a92eb74147d46c800a9f96297ae1d9f96f4e
@@ -4431,7 +4431,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prop-types@npm:*":
+"prop-types@npm:^15.7.2":
   version: 15.8.1
   resolution: "prop-types@npm:15.8.1"
   dependencies:
@@ -5750,18 +5750,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webr@npm:^0.2.1":
-  version: 0.2.1
-  resolution: "webr@npm:0.2.1"
+"webr@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "webr@npm:0.2.2"
   dependencies:
     "@codemirror/autocomplete": ^6.8.1
     "@codemirror/commands": ^6.2.4
     "@codemirror/state": ^6.2.1
     "@codemirror/view": ^6.15.0
     "@msgpack/msgpack": ^2.8.0
+    classnames: ^2.2.6
     codemirror: ^6.0.1
     codemirror-lang-r: ^0.1.0-2
     lightningcss: ^1.21.5
+    prop-types: ^15.7.2
     react: ^18.2.0
     react-accessible-treeview: ^2.6.1
     react-dom: ^18.2.0
@@ -5771,7 +5773,7 @@ __metadata:
     xterm: ^5.1.0
     xterm-addon-fit: ^0.7.0
     xterm-readline: ^1.1.1
-  checksum: cb32a0aa41549f86b9bea7c6f7fae285b629971a38ab8d4a3c92d9fdbbbec9a61341fdfcb2fc36efecabac09b5f2354833f99d5fa5e031d4b718f8b1484cf469
+  checksum: 947082f83e17c250e47dde8ddf62d77eb6ce52d03a44cd8a657dec25b1b4de7833f8a7b299d1b334716b32289a28a00fc4eb025b410f67320073582ee6c624de
   languageName: node
   linkType: hard
 
