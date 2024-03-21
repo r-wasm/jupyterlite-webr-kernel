@@ -102,6 +102,10 @@ export class WebRKernel implements IKernel {
     await this.#webRConsole.webR.evalRVoid(`
       options(webr.plot.width = 7, webr.plot.height = 5.25)
     `);
+    // Install package management shims
+    await this.#webRConsole.webR.evalRVoid(`
+      webr::shim_install()
+    `);
   }
 
   async handleMessage(msg: KernelMessage.IMessage): Promise<void> {
