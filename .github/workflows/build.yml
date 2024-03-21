@@ -2,7 +2,7 @@ name: Build and deploy
 
 on:
   push:
-    branches: [main, webr-0-3-0]
+    branches: [main]
   pull_request:
     branches: [main]
   release:
@@ -28,13 +28,13 @@ jobs:
           jupyter lite build
 
       - name: Upload _output/ artifact
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/webr-0-3-0'
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: "_output/"
 
   deploy_gh_pages:
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/webr-0-3-0'
+    if: github.ref == 'refs/heads/main'
     needs: build
 
     permissions:
