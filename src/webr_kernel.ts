@@ -2,18 +2,16 @@ import { KernelMessage } from '@jupyterlab/services';
 import { IKernel } from '@jupyterlite/kernel';
 import { ISignal, Signal } from '@lumino/signaling';
 import { v4 as uuid } from 'uuid';
-import { sha256 } from 'hash.js';
 
-import { Console, Shelter } from "webr";
-import { RCharacter, RList } from "webr/robj-main";
+import { Console, Shelter, RCharacter, RList, RObject } from 'webr';
 
 export namespace WebRKernel {
   export interface IOptions extends IKernel.IOptions {}
 }
 
-const webRVersion = "0.2.1";
-const baseRVersion = "4.3.0";
-const protolcolVersion = "5.2";
+const webRVersion = "0.3.0-rc.0";
+const baseRVersion = "4.3.3";
+const protocolVersion = "5.2";
 
 export class WebRKernel implements IKernel {
   #id: string;
@@ -28,7 +26,8 @@ export class WebRKernel implements IKernel {
   #init: Promise<any>;
   #envSetup: Promise<any>;
   #shelter!: Shelter;
-  #lastPlotHash: string | undefined = undefined;
+  #bitmapCanvas: HTMLCanvasElement;
+  #lastRecord: RObject | null = null;
 
   constructor(options: WebRKernel.IOptions) {
     const { id, name, sendMessage, location } = options;
@@ -45,6 +44,7 @@ export class WebRKernel implements IKernel {
     this.#webRConsole.run();
     this.#init = this.#webRConsole.webR.init();
     this.#envSetup = this.setupEnvironment();
+    this.#bitmapCanvas = document.createElement('canvas');
   }
 
   get id(): string {
@@ -82,8 +82,6 @@ export class WebRKernel implements IKernel {
   async setupEnvironment(): Promise<void> {
     await this.ready;
     this.#shelter = await new this.#webRConsole.webR.Shelter();
-    await this.#webRConsole.webR.installPackages(['svglite']);
-    await this.#webRConsole.webR.evalRVoid('library(svglite)');
     // Enable dev.control to allow active plots to be copied
     await this.#webRConsole.webR.evalRVoid(`
       options(device = function(...){
@@ -94,6 +92,9 @@ export class WebRKernel implements IKernel {
     // Create a signal when there is a new plot to be shown in JupyterLite
     await this.#webRConsole.webR.evalRVoid(`
       setHook("grid.newpage", function() {
+        options(webr.plot.new = TRUE)
+      }, "replace")
+      setHook("plot.new", function() {
         options(webr.plot.new = TRUE)
       }, "replace")
     `);
@@ -138,7 +139,10 @@ export class WebRKernel implements IKernel {
     await this.#envSetup;
 
     try {
-      const exec = await this.#shelter.captureR(req.content.code, { withAutoprint: true });
+      const exec = await this.#shelter.captureR(req.content.code, {
+        withAutoprint: true,
+        captureGraphics: false, // We handle graphics capture, to support incremental plotting
+      });
       const output = exec.output as { type: string; data: unknown }[];
       // Deal with showing stream and condition outputs
       output.forEach(async (out) => {
@@ -196,33 +200,49 @@ export class WebRKernel implements IKernel {
 
   async sendPlotOutput(msg: KernelMessage.IMessage): Promise<void> {
     const dev = await this.#webRConsole.webR.evalRNumber('dev.cur()');
-    const newPlot = await this.#webRConsole.webR.evalRBoolean('options("webr.plot.new")[[1]]');
+    const newPlot = await this.#webRConsole.webR.evalRBoolean('getOption("webr.plot.new")');
     if (dev > 1) {
-      await this.#webRConsole.webR.evalRVoid(`
+      const capturePlot = await this.#shelter.captureR(`
         try({
-          dev.copy(function(...) {
-            w <- options("webr.plot.width")[[1]]
-            h <- options("webr.plot.height")[[1]]
-            svglite(width = w, height = h, ...)
-          }, "/tmp/_webRplots.svg")
-          dev.off()
-        }, silent=TRUE)
+          w <- getOption("webr.plot.width")
+          h <- getOption("webr.plot.height")
+          webr::canvas(width = 72 * w, height = 72 * h, capture = TRUE)
+          capture_dev = dev.cur();
+
+          dev.set(${dev})
+          dev.copy(which = capture_dev)
+          dev.off(capture_dev)
+          recordPlot()
+        }, silent = TRUE)
       `);
-      const plotData = await this.#webRConsole.webR.FS.readFile('/tmp/_webRplots.svg');
+      const image = capturePlot.images[0];
+      this.#bitmapCanvas.width = image.width;
+      this.#bitmapCanvas.height = image.height;
+      this.#bitmapCanvas.getContext('bitmaprenderer')?.transferFromImageBitmap(image);
+      const plotData = this.#bitmapCanvas.toDataURL('image/png');
 
       // Send plot data to client if a new.plot() has been triggered or if
       // the plot has changed since last time
-      const plotHash = sha256().update(plotData).digest('hex');
-      if (newPlot || !this.#lastPlotHash || plotHash !== this.#lastPlotHash) {
-        this.#lastPlotHash = plotHash;
+      const plotChanged = await this.#webRConsole.webR.evalRBoolean('!identical(a, b)', {
+        env: {
+          a: this.#lastRecord,
+          b: capturePlot.result,
+        }
+      })
+      if (newPlot || plotChanged) {
+        this.#lastRecord = capturePlot.result;
         this.sendIOReply(msg, 'display_data', {
           data: {
-            'image/svg+xml': new TextDecoder().decode(plotData),
+            'image/png': plotData.split(",")[1],
+            'text/plain': [
+              `<Figure of size ${this.#bitmapCanvas.width}x${this.#bitmapCanvas.height}>`
+            ]
           },
           metadata: {
-            'image/svg+xml': {
-              isolated: true,
-            },
+            'image/png' : {
+              width: 3 * this.#bitmapCanvas.width / 4,
+              height: 3 * this.#bitmapCanvas.height / 4,
+            }
           },
         });
         await this.#webRConsole.webR.evalRVoid('options(webr.plot.new = FALSE)');
@@ -238,7 +258,7 @@ export class WebRKernel implements IKernel {
         session: this.#parentHeader ? this.#parentHeader.session : '',
         date: new Date().toISOString(),
         msg_type: 'input_request',
-        version: protolcolVersion,
+        version: protocolVersion,
       },
       parent_header: this.#parentHeader as KernelMessage.IHeader,
       metadata: {},
@@ -261,7 +281,7 @@ export class WebRKernel implements IKernel {
         session: msg.header.session,
         date: new Date().toISOString(),
         msg_type: type,
-        version: protolcolVersion,
+        version: protocolVersion,
       },
       parent_header: msg.header,
       metadata: {},
@@ -284,7 +304,7 @@ export class WebRKernel implements IKernel {
         session: msg.header.session,
         date: new Date().toISOString(),
         msg_type: type,
-        version: protolcolVersion,
+        version: protocolVersion,
       },
       parent_header: msg.header as KernelMessage.IHeader,
       metadata: {},
@@ -303,13 +323,13 @@ export class WebRKernel implements IKernel {
         session: msg.header.session,
         date: new Date().toISOString(),
         msg_type: 'kernel_info_reply',
-        version: protolcolVersion,
+        version: protocolVersion,
       },
       parent_header: msg.header as KernelMessage.IHeader<'kernel_info_request'>,
       metadata: {},
       content: {
         status: 'ok',
-        protocol_version: protolcolVersion,
+        protocol_version: protocolVersion,
         implementation: 'webr',
         implementation_version: webRVersion,
         language_info: {
@@ -336,7 +356,7 @@ export class WebRKernel implements IKernel {
         session: this.#parentHeader ? this.#parentHeader.session : '',
         date: new Date().toISOString(),
         msg_type: 'status',
-        version: protolcolVersion,
+        version: protocolVersion,
       },
       content: {
         execution_state: status,
