@@ -5,7 +5,7 @@ import { IKernel } from '@jupyterlite/kernel';
 import { Console, WebR, Shelter} from 'webr';
 import { RList, RCharacter, RLogical } from 'webr';
 
-const webRVersion = "0.3.0-rc.0";
+const webRVersion = "0.3.0-rc.1";
 const baseRVersion = "4.3.3";
 const protocolVersion = "5.3";
 
@@ -140,8 +140,7 @@ export class WebRKernel extends BaseKernel {
         const value = await exec.result.get('value');
         const exec_result = await this.shelter.evalR(`
           capture.output(print(value))
-        `, { env: { value: value._payload } }) as RCharacter;
-        //TODO: Avoid using _payload
+        `, { env: { value } }) as RCharacter;
 
         this.publishExecuteResult({
           execution_count: this.executionCount,
