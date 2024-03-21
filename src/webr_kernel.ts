@@ -3,7 +3,7 @@ import { KernelMessage } from '@jupyterlab/services';
 import { IKernel } from '@jupyterlite/kernel';
 
 import { Console, WebR, Shelter} from 'webr';
-import { RObject, RList, RCharacter, RLogical } from 'webr';
+import { RList, RCharacter, RLogical } from 'webr';
 
 const webRVersion = "0.3.0-rc.0";
 const baseRVersion = "4.3.3";
@@ -15,7 +15,7 @@ export class WebRKernel extends BaseKernel {
   init: Promise<void>;
   #webRConsole: Console;
   #bitmapCanvas: HTMLCanvasElement;
-  #lastRecord: RObject | null = null;
+  #lastPlot: string | null = null;
 
   constructor(options: IKernel.IOptions) {
     super(options);
@@ -190,7 +190,6 @@ export class WebRKernel extends BaseKernel {
           dev.set(${dev})
           dev.copy(which = capture_dev)
           dev.off(capture_dev)
-          recordPlot()
         }, silent = TRUE)
       `);
       const image = capturePlot.images[0];
@@ -199,16 +198,8 @@ export class WebRKernel extends BaseKernel {
       this.#bitmapCanvas.getContext('bitmaprenderer')?.transferFromImageBitmap(image);
       const plotData = this.#bitmapCanvas.toDataURL('image/png');
 
-      // Send plot data to client if a new.plot() has been triggered or if
-      // the plot has changed since last time
-      const plotChanged = await this.webR.evalRBoolean('!identical(a, b)', {
-        env: {
-          a: this.#lastRecord,
-          b: capturePlot.result,
-        }
-      })
-      if (newPlot || plotChanged) {
-        this.#lastRecord = capturePlot.result;
+      if (newPlot || plotData !== this.#lastPlot) {
+        this.#lastPlot = plotData;
         this.displayData({
           data: {
             'image/png': plotData.split(",")[1],
