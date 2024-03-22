@@ -897,7 +897,7 @@ __metadata:
     shx: ^0.3.0
     typescript: ^4.9.5
     uuid: ^9.0.0
-    webr: ^0.3.0-rc.1
+    webr: ^0.3.0
   languageName: unknown
   linkType: soft
 
@@ -5917,9 +5917,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webr@npm:^0.3.0-rc.1":
-  version: 0.3.0-rc.1
-  resolution: "webr@npm:0.3.0-rc.1"
+"webr@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "webr@npm:0.3.0"
   dependencies:
     "@codemirror/autocomplete": ^6.8.1
     "@codemirror/commands": ^6.2.4
@@ -5940,7 +5940,7 @@ __metadata:
     xterm: ^5.1.0
     xterm-addon-fit: ^0.7.0
     xterm-readline: ^1.1.1
-  checksum: a2fbd999048005ed021540937a616947f5a61bd1f8cea74d1c9745bfb6becb10b9cfd4526fe4d585b0f5ceeae56460e85f640e1de28461dec631cc074af7a940
+  checksum: 77c4a8a8a36e2d2e3854a9d66ff1a5bfee82fde43744dce21204f00f52723044da5b045dcc4dc6ecdbad5f384f7e5e9955cbbd2071df30504bd6ce508b67f478
   languageName: node
   linkType: hard
 
