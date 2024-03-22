@@ -48,9 +48,9 @@ export class WebRKernel extends BaseKernel {
         options(webr.plot.new = TRUE)
       }, "replace")
     `);
-    // Default plot size
+    // Default figure size
     await this.webR.evalRVoid(`
-      options(webr.plot.width = 7, webr.plot.height = 5.25)
+      options(webr.fig.width = 7, webr.fig.height = 5.25)
     `);
     // Install package management shims
     await this.webR.evalRVoid(`
@@ -181,8 +181,8 @@ export class WebRKernel extends BaseKernel {
     if (dev > 1) {
       const capturePlot = await this.shelter.captureR(`
         try({
-          w <- getOption("webr.plot.width")
-          h <- getOption("webr.plot.height")
+          w <- getOption("webr.fig.width")
+          h <- getOption("webr.fig.height")
           webr::canvas(width = 72 * w, height = 72 * h, capture = TRUE)
           capture_dev = dev.cur();
 
