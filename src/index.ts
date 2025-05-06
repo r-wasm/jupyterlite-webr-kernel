@@ -31,7 +31,7 @@ const server_kernel: JupyterLiteServerPlugin<void> = {
     }
 
     if (config.repoUrl) {
-      webROptions.repoUrl = URLExt.parse(config.baseUrl).href;
+      webROptions.repoUrl = URLExt.parse(config.repoUrl).href;
     }
 
     kernelspecs.register({

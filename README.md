@@ -71,7 +71,7 @@ While webR supports interrupting long running computations, interrupting cell ex
 
 ### Development install
 
-Note: You will need NodeJS and Python 3.9+ to build the extension package. There is an environment.yml file for conda/mamba/micromamba users to create a conda environment with the required dependencies.å
+Note: You will need NodeJS and Python 3.9+ to build the extension package. There is an environment.yml file for conda/mamba/micromamba users to create a conda environment with the required dependencies.
 
 The `jlpm` command is JupyterLab's pinned version of [yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use `yarn` or `npm` in lieu of `jlpm` below.
 
