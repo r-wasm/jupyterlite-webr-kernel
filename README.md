@@ -28,6 +28,26 @@ Then build your JupyterLite site:
 jupyter lite build
 ```
 
+## Configuration
+
+The file `jypyter-lite.json` may be modified to set the webR base URL `baseUrl` and default package repository `repoUrl`. For example:
+
+```json
+{
+  "jupyter-lite-schema-version": 0,
+  "jupyter-config-data": {
+    "litePluginSettings": {
+      "@r-wasm/webr-kernel-extension:kernel": {
+        "baseUrl": "https://example.com/webr/v0.0.0/",
+        "repoUrl": "https://myuser.r-universe.dev/"
+      }
+    }
+  }
+}
+```
+
+See the Jupyterlite documentation on [configuration files](https://jupyterlite.readthedocs.io/en/latest/howto/configure/config_files.html#jupyter-lite-json) for more information.
+
 ## Limitations
 
 ### Headers

@@ -67,6 +67,7 @@
   },
   "devDependencies": {
     "@jupyterlab/builder": "^4.4.1",
+    "@jupyterlab/coreutils": "^6.4.0",
     "@types/uuid": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^4.8.1",
     "@typescript-eslint/parser": "^4.8.1",

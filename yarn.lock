@@ -460,7 +460,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/coreutils@npm:^6.3.7":
+"@jupyterlab/coreutils@npm:^6.3.7, @jupyterlab/coreutils@npm:^6.4.0":
   version: 6.4.1
   resolution: "@jupyterlab/coreutils@npm:6.4.1"
   dependencies:
@@ -956,6 +956,7 @@ __metadata:
   resolution: "@r-wasm/jupyterlite-webr-kernel@workspace:."
   dependencies:
     "@jupyterlab/builder": ^4.4.1
+    "@jupyterlab/coreutils": ^6.4.0
     "@jupyterlite/kernel": ^0.5.0
     "@jupyterlite/server": ^0.5.0
     "@types/uuid": ^9.0.0
@@ -1784,10 +1785,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"clsx@npm:^2.0.0":
-  version: 2.1.1
-  resolution: "clsx@npm:2.1.1"
-  checksum: acd3e1ab9d8a433ecb3cc2f6a05ab95fe50b4a3cfc5ba47abb6cbf3754585fcb87b84e90c822a1f256c4198e3b41c7f6c391577ffc8678ad587fc0976b24fd57
+"clsx@npm:^1.1.1":
+  version: 1.2.1
+  resolution: "clsx@npm:1.2.1"
+  checksum: 30befca8019b2eb7dbad38cff6266cf543091dae2825c856a62a8ccf2c3ab9c2907c4d12b288b73101196767f66812365400a227581484a05f968b0307cfaf12
   languageName: node
   linkType: hard
 
@@ -4880,14 +4881,14 @@ __metadata:
   linkType: hard
 
 "react-data-grid@npm:^7.0.0-beta.44":
-  version: 7.0.0-beta.52
-  resolution: "react-data-grid@npm:7.0.0-beta.52"
+  version: 7.0.0-canary.49
+  resolution: "react-data-grid@npm:7.0.0-canary.49"
   dependencies:
-    clsx: ^2.0.0
+    clsx: ^1.1.1
   peerDependencies:
-    react: ^19.0
-    react-dom: ^19.0
-  checksum: dd6e746ea7a641c416a9cb9a6a9815f56bce9bf1a3b4d20ac2de5b388923893b79d6a4151b962fea0dd43ec0b6b4da357a919fc5b6aef3f6ad22551e13000aae
+    react: ^16.14 || ^17.0
+    react-dom: ^16.14 || ^17.0
+  checksum: fe57d441a5e56dac39a0f7e06979a27d5606515653ead31fc06f9c2fe08ebaf88ff4ab70f1565dd356b343cf4612137dea2d188a40a7e246b85dd5aa2589da04
   languageName: node
   linkType: hard
 
