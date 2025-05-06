@@ -28,6 +28,26 @@ Then build your JupyterLite site:
 jupyter lite build
 ```
 
+## Configuration
+
+The file `jypyter-lite.json` may be modified to set the webR base URL `baseUrl` and default package repository `repoUrl`. For example:
+
+```json
+{
+  "jupyter-lite-schema-version": 0,
+  "jupyter-config-data": {
+    "litePluginSettings": {
+      "@r-wasm/webr-kernel-extension:kernel": {
+        "baseUrl": "https://webr.r-wasm.org/latest/",
+        "repoUrl": "https://repo.r-wasm.org/"
+      }
+    }
+  }
+}
+```
+
+See the Jupyterlite documentation on [configuration files](https://jupyterlite.readthedocs.io/en/latest/howto/configure/config_files.html#jupyter-lite-json) for more information.
+
 ## Limitations
 
 ### Headers
@@ -51,7 +71,7 @@ While webR supports interrupting long running computations, interrupting cell ex
 
 ### Development install
 
-Note: You will need NodeJS and Python 3.8+ to build the extension package. There is an environment.yml file for conda/mamba/micromamba users to create a conda environment with the required dependencies.
+Note: You will need NodeJS and Python 3.9+ to build the extension package. There is an environment.yml file for conda/mamba/micromamba users to create a conda environment with the required dependencies.
 
 The `jlpm` command is JupyterLab's pinned version of [yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use `yarn` or `npm` in lieu of `jlpm` below.
 

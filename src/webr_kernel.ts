@@ -2,7 +2,7 @@ import { BaseKernel } from '@jupyterlite/kernel';
 import { KernelMessage } from '@jupyterlab/services';
 import { IKernel } from '@jupyterlite/kernel';
 
-import { Console, WebR, Shelter} from 'webr';
+import { Console, WebR, Shelter, WebROptions } from 'webr';
 import { RList, RCharacter, RLogical } from 'webr';
 
 const webRVersion = "0.3.0";
@@ -17,13 +17,13 @@ export class WebRKernel extends BaseKernel {
   #bitmapCanvas: HTMLCanvasElement;
   #lastPlot: string | null = null;
 
-  constructor(options: IKernel.IOptions) {
+  constructor(options: IKernel.IOptions, webROptions: WebROptions) {
     super(options);
     this.#webRConsole = new Console({
       stdout: (line: string) => console.log(line),
       stderr: (line: string) => console.error(line),
       prompt: (prompt: string) => this.inputRequest({ prompt, password: false }),
-    });
+    }, webROptions);
     this.webR = this.#webRConsole.webR;
     this.init = this.setupEnvironment();
     this.#bitmapCanvas = document.createElement('canvas');
