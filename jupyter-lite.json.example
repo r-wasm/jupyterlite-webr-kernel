@@ -1,0 +1,11 @@
+{
+  "jupyter-lite-schema-version": 0,
+  "jupyter-config-data": {
+    "litePluginSettings": {
+      "@r-wasm/webr-kernel-extension:kernel": {
+        "baseUrl": "https://example.com/webr/v0.0.0/",
+        "repoUrl": "https://r-lib.r-universe.dev/"
+      }
+    }
+  }
+}
