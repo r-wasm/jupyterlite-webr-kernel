@@ -38,8 +38,8 @@ The file `jypyter-lite.json` may be modified to set the webR base URL `baseUrl` 
   "jupyter-config-data": {
     "litePluginSettings": {
       "@r-wasm/webr-kernel-extension:kernel": {
-        "baseUrl": "https://example.com/webr/v0.0.0/",
-        "repoUrl": "https://myuser.r-universe.dev/"
+        "baseUrl": "https://webr.r-wasm.org/latest/",
+        "repoUrl": "https://repo.r-wasm.org/"
       }
     }
   }
