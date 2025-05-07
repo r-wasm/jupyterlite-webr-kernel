@@ -35,7 +35,7 @@ export class WebRKernel extends BaseKernel {
     // Enable dev.control to allow active plots to be copied
     await this.webR.evalRVoid(`
       options(device = function(...){
-        pdf(...)
+        webr::canvas(...)
         dev.control("enable")
       }, webr.plot.new = FALSE)
     `);
