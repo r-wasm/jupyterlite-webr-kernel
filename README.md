@@ -8,24 +8,22 @@ A demo instance of JupyterLite including the webR kernel and a sample Jupyter no
 
 ## Install
 
-This package is not yet available on PyPI. You can install it from GitHub:
+This package is available via PyPI:
 
 ```bash
-pip install git+https://github.com/r-wasm/jupyterlite-webr-kernel.git
+pip install jupyterlite-webr
 ```
 
-or from a local clone:
-
-```bash
-git clone https://github.com/r-wasm/jupyterlite-webr-kernel
-cd jupyterlite-webr-kernel
-pip install .
-```
-
-Then build your JupyterLite site:
+Once installed, build your JupyterLite site:
 
 ```bash
 jupyter lite build
+```
+
+The `_output` directory will contain the static JupyterLite site. You can serve it locally with the command,
+
+```bash
+jupyter lite serve
 ```
 
 ## Configuration
@@ -65,7 +63,21 @@ While webR supports interrupting long running computations, interrupting cell ex
 
 ## Contributing
 
-### Development install
+### Development installation
+
+First, install a development version of the package from GitHub:
+
+```bash
+pip install git+https://github.com/r-wasm/jupyterlite-webr-kernel.git
+```
+
+or from a local clone:
+
+```bash
+git clone https://github.com/r-wasm/jupyterlite-webr-kernel
+cd jupyterlite-webr-kernel
+pip install .
+```
 
 Note: You will need NodeJS and Python 3.9+ to build the extension package. There is an environment.yml file for conda/mamba/micromamba users to create a conda environment with the required dependencies.
 
