@@ -59,10 +59,6 @@ Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp
 ```
 
-### Virtual file system storage
-
-Due to limitations in the way the webR worker thread is implemented, the persistent JupyterLite file storage and the Emscripten VFS used by webR are not accessible to one another. The simplest way to import data into a webR notebook at the time of writing is by using R functions such as `read.csv()` with a publicly accessible URL.
-
 ### Interruption
 
 While webR supports interrupting long running computations, interrupting cell execution has not yet been implemented in JupyterLite. An infinite looping cell can only be recovered by restarting the kernel.

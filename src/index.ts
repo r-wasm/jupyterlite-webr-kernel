@@ -13,7 +13,6 @@ const server_kernel: JupyterLiteServerPlugin<void> = {
   autoStart: true,
   requires: [IKernelSpecs],
   activate: (app: JupyterLiteServer, kernelspecs: IKernelSpecs) => {
-    console.log(PageConfig.getOption('litePluginSettings'));
     const config = JSON.parse(
       PageConfig.getOption('litePluginSettings') || '{}'
     )[PLUGIN_ID] || {};

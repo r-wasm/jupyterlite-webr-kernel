@@ -56,6 +56,12 @@ export class WebRKernel extends BaseKernel {
     await this.webR.evalRVoid(`
       webr::shim_install()
     `);
+
+    // Mount Jupyterlite storage and set the CWD
+    await this.webR.evalRVoid(`
+      webr::mount("/drive", type="DRIVEFS")
+      setwd("/drive")
+    `);
   }
 
   inputReply(content: KernelMessage.IInputReplyMsg['content']): void {
