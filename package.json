@@ -1,6 +1,6 @@
 {
   "name": "@r-wasm/jupyterlite-webr-kernel",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "An R kernel for JupyterLite, powered by webR",
   "keywords": [
     "jupyter",
