@@ -1,4 +1,4 @@
-import { JupyterLiteServer, JupyterLiteServerPlugin } from '@jupyterlite/server';
+import { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
 import { IKernel, IKernelSpecs } from '@jupyterlite/kernel';
 import { PageConfig, URLExt } from '@jupyterlab/coreutils';
 import { WebRKernel } from './webr_kernel';
@@ -8,11 +8,11 @@ import type { WebROptions } from 'webr';
 
 const PLUGIN_ID = '@r-wasm/webr-kernel-extension:kernel';
 
-const server_kernel: JupyterLiteServerPlugin<void> = {
+const server_kernel: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
   autoStart: true,
   requires: [IKernelSpecs],
-  activate: (app: JupyterLiteServer, kernelspecs: IKernelSpecs) => {
+  activate: (app: JupyterFrontEnd, kernelspecs: IKernelSpecs) => {
     const config = JSON.parse(
       PageConfig.getOption('litePluginSettings') || '{}'
     )[PLUGIN_ID] || {};
@@ -59,5 +59,5 @@ const server_kernel: JupyterLiteServerPlugin<void> = {
   },
 };
 
-const plugins: JupyterLiteServerPlugin<any>[] = [server_kernel];
+const plugins: JupyterFrontEndPlugin<any>[] = [server_kernel];
 export default plugins;
