@@ -5,6 +5,7 @@ import { WebRKernel } from './webr_kernel';
 import logo32 from '!!file-loader?context=.!../style/logos/r-logo-32x32.png';
 import logo64 from '!!file-loader?context=.!../style/logos/r-logo-64x64.png';
 import type { WebROptions } from 'webr';
+import { IServiceWorkerManager } from '@jupyterlite/server';
 
 const PLUGIN_ID = '@r-wasm/webr-kernel-extension:kernel';
 
@@ -12,7 +13,12 @@ const server_kernel: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
   autoStart: true,
   requires: [IKernelSpecs],
-  activate: (app: JupyterFrontEnd, kernelspecs: IKernelSpecs) => {
+  optional: [IServiceWorkerManager],
+  activate: (
+    app: JupyterFrontEnd,
+    kernelspecs: IKernelSpecs,
+    serviceWorkerManager: IServiceWorkerManager | null
+  ) => {
     const config = JSON.parse(
       PageConfig.getOption('litePluginSettings') || '{}'
     )[PLUGIN_ID] || {};
@@ -53,7 +59,7 @@ const server_kernel: JupyterFrontEndPlugin<void> = {
         },
       },
       create: async (options: IKernel.IOptions): Promise<IKernel> => {
-        return new WebRKernel({ ...options }, webROptions);
+        return new WebRKernel({ ...options }, webROptions, serviceWorkerManager);
       },
     });
   },

@@ -4,6 +4,7 @@ import { IKernel } from '@jupyterlite/kernel';
 
 import { Console, WebR, Shelter, WebROptions } from 'webr';
 import { RList, RCharacter, RLogical } from 'webr';
+import { IServiceWorkerManager } from '@jupyterlite/server';
 
 const protocolVersion = "5.3";
 
@@ -15,7 +16,11 @@ export class WebRKernel extends BaseKernel {
   #bitmapCanvas: HTMLCanvasElement;
   #lastPlot: string | null = null;
 
-  constructor(options: IKernel.IOptions, webROptions: WebROptions) {
+  constructor(
+    options: IKernel.IOptions,
+    webROptions: WebROptions,
+    private serviceWorkerManager: IServiceWorkerManager | null
+  ) {
     super(options);
     this.#webRConsole = new Console({
       stdout: (line: string) => console.log(line),
@@ -57,6 +62,7 @@ export class WebRKernel extends BaseKernel {
 
     // Mount Jupyterlite storage and set the CWD
     await this.webR.evalRVoid(`
+      options(webr.drivefs.browsingContextId = "${this.serviceWorkerManager?.browsingContextId}")
       webr::mount("/drive", type="DRIVEFS")
       setwd("/drive")
     `);
