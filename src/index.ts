@@ -1,18 +1,24 @@
-import { JupyterLiteServer, JupyterLiteServerPlugin } from '@jupyterlite/server';
+import { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
 import { IKernel, IKernelSpecs } from '@jupyterlite/kernel';
 import { PageConfig, URLExt } from '@jupyterlab/coreutils';
 import { WebRKernel } from './webr_kernel';
 import logo32 from '!!file-loader?context=.!../style/logos/r-logo-32x32.png';
 import logo64 from '!!file-loader?context=.!../style/logos/r-logo-64x64.png';
 import type { WebROptions } from 'webr';
+import { IServiceWorkerManager } from '@jupyterlite/server';
 
 const PLUGIN_ID = '@r-wasm/webr-kernel-extension:kernel';
 
-const server_kernel: JupyterLiteServerPlugin<void> = {
+const server_kernel: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
   autoStart: true,
   requires: [IKernelSpecs],
-  activate: (app: JupyterLiteServer, kernelspecs: IKernelSpecs) => {
+  optional: [IServiceWorkerManager],
+  activate: (
+    app: JupyterFrontEnd,
+    kernelspecs: IKernelSpecs,
+    serviceWorkerManager: IServiceWorkerManager | null
+  ) => {
     const config = JSON.parse(
       PageConfig.getOption('litePluginSettings') || '{}'
     )[PLUGIN_ID] || {};
@@ -53,11 +59,11 @@ const server_kernel: JupyterLiteServerPlugin<void> = {
         },
       },
       create: async (options: IKernel.IOptions): Promise<IKernel> => {
-        return new WebRKernel({ ...options }, webROptions);
+        return new WebRKernel({ ...options }, webROptions, serviceWorkerManager);
       },
     });
   },
 };
 
-const plugins: JupyterLiteServerPlugin<any>[] = [server_kernel];
+const plugins: JupyterFrontEndPlugin<any>[] = [server_kernel];
 export default plugins;
